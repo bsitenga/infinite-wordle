@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./App.css";
+import { ImStatsBars } from "react-icons/im";
+import { FiHelpCircle } from "react-icons/fi";
 import wordsArray from "./wordsArray";
 import wordsSet from "./wordsSet";
 import alphabet from "./alphabet";
@@ -50,7 +52,9 @@ function App() {
     "Press enter to check the word"
   );
   const [gameOver, setGameOver] = useState(false);
-  const [streak, setStreak] = useState(Number(localStorage.getItem("streak")) || 0);
+  const [streak, setStreak] = useState(
+    Number(localStorage.getItem("streak")) || 0
+  );
   const [longestStreak, setLongestStreak] = useState(
     Number(localStorage.getItem("longestStreak")) || 0
   );
@@ -74,7 +78,7 @@ function App() {
             } else {
               guessesCopy[index1][index2] = "_";
             }
-            setGuesses(guessesCopy);   
+            setGuesses(guessesCopy);
           }
         }
       }
@@ -194,8 +198,18 @@ function App() {
 
   return (
     <div tabindex="0" className="App" onKeyDown={handleKeyPress} ref={divRef}>
+      <div className="navbar">
+        <h1>
+          WUZZLE
+          <span className="icon">
+            <ImStatsBars />
+          </span>
+          <span className="icon">
+            <FiHelpCircle />
+          </span>
+        </h1>
+      </div>
       <div className="main-header">
-        <h1>Welcome to Infinite Wordle</h1>
         <p>
           Based on{" "}
           <a target="_blank" href="https://www.powerlanguage.co.uk/wordle/">
@@ -270,7 +284,13 @@ function App() {
         ) : (
           ""
         )}
-        {gameOver ? <button className="new-game-button" onClick={newGame}>New Game</button> : ""}
+        {gameOver ? (
+          <button className="new-game-button" onClick={newGame}>
+            New Game
+          </button>
+        ) : (
+          ""
+        )}
       </div>
     </div>
   );
