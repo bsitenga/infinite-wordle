@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "./App.css";
 import wordsArray from "./wordsArray";
 import wordsSet from "./wordsSet";
@@ -13,34 +13,49 @@ const createLetterArray = () => {
   return letterArray;
 };
 
+const createGuessArray = () => {
+  let guessArray = [];
+  for (let i = 0; i < 6; i++) {
+    guessArray.push(["_", "_", "_", "_", "_"]);
+  }
+  return guessArray;
+};
+
+const createGuessKeyArray = () => {
+  let guessKeyArray = [];
+  for (let i = 0; i < 6; i++) {
+    guessKeyArray.push(["unknown", "unknown", "unknown", "unknown", "unknown"]);
+  }
+  return guessKeyArray;
+};
+
+const chooseWord = () => {
+  let word =
+    wordsArray[Math.floor(Math.random() * wordsArray.length)].toUpperCase();
+  while (word[4] === "S") {
+    word =
+      wordsArray[Math.floor(Math.random() * wordsArray.length)].toUpperCase();
+  }
+  return word;
+};
+
 function App() {
   const [letterArray, setLetterArray] = useState(createLetterArray());
-  const [guesses, setGuesses] = useState([
-    ["_", "_", "_", "_", "_"],
-    ["_", "_", "_", "_", "_"],
-    ["_", "_", "_", "_", "_"],
-    ["_", "_", "_", "_", "_"],
-    ["_", "_", "_", "_", "_"],
-    ["_", "_", "_", "_", "_"],
-  ]);
-  const [guessKey, setGuessKey] = useState([
-    ["unknown", "unknown", "unknown", "unknown", "unknown"],
-    ["unknown", "unknown", "unknown", "unknown", "unknown"],
-    ["unknown", "unknown", "unknown", "unknown", "unknown"],
-    ["unknown", "unknown", "unknown", "unknown", "unknown"],
-    ["unknown", "unknown", "unknown", "unknown", "unknown"],
-    ["unknown", "unknown", "unknown", "unknown", "unknown"],
-  ]);
+  const [guesses, setGuesses] = useState(createGuessArray());
+  const [guessKey, setGuessKey] = useState(createGuessKeyArray());
   const [index1, setIndex1] = useState(0);
   const [index2, setIndex2] = useState(0);
-  // const [guessWord, setGuessWord] = useState(
-  //   wordsArray[Math.floor(Math.random() * wordsArray.length)].toUpperCase()
-  // );
-  const [guessWord, setGuessWord] = useState("VAULT");
+  const [guessWord, setGuessWord] = useState(chooseWord());
   const [statusMessage, setStatusMessage] = useState(
     "Press enter to check the word"
   );
   const [gameOver, setGameOver] = useState(false);
+  const [streak, setStreak] = useState(Number(localStorage.getItem("streak")) || 0);
+  const [longestStreak, setLongestStreak] = useState(
+    Number(localStorage.getItem("longestStreak")) || 0
+  );
+  const [gameOverMessage, setGameOverMessage] = useState("");
+  const divRef = useRef(null);
 
   const handleKeyPress = (e) => {
     if (!gameOver) {
@@ -53,10 +68,13 @@ function App() {
             setGuesses(guessesCopy);
             setIndex2(index2 - 1);
           } else {
-            guessesCopy[index1][index2] = "_";
-            guessesCopy[index1][index2 - 1] = "_";
-            setGuesses(guessesCopy);
-            setIndex2(index2 - 1);
+            if (guessesCopy[index1][index2] === "_") {
+              guessesCopy[index1][index2 - 1] = "_";
+              setIndex2(index2 - 1);
+            } else {
+              guessesCopy[index1][index2] = "_";
+            }
+            setGuesses(guessesCopy);   
           }
         }
       }
@@ -74,7 +92,7 @@ function App() {
       //enter
       else if (e.keyCode === 13) {
         //end of word
-        if (index2 === 4) {
+        if (index2 === 4 && guesses[index1][index2] !== "_") {
           //is word in dictionary
           if (isValid(index1)) {
             //check letters of word
@@ -143,14 +161,39 @@ function App() {
     setGameOver(true);
 
     if (status === "win") {
-      console.log("congrats");
+      localStorage.setItem("streak", streak + 1);
+      if (streak + 1 > longestStreak) {
+        setLongestStreak(streak + 1);
+        localStorage.setItem("longestStreak", streak + 1);
+      }
+      setStreak(streak + 1);
+      setGameOverMessage("Congratulations! You won!");
     } else {
-      console.log("loss");
+      localStorage.setItem("streak", 0);
+      setStreak(0);
+      setGameOverMessage("Better luck next time!");
     }
   };
 
+  const newGame = () => {
+    setLetterArray(createLetterArray());
+    setGuesses(createGuessArray());
+    setGuessKey(createGuessKeyArray());
+    setIndex1(0);
+    setIndex2(0);
+    setGuessWord(chooseWord());
+    setStatusMessage("Press enter to check the word");
+    setGameOver(false);
+    setGameOverMessage("");
+    divRef.current.focus();
+  };
+
+  useEffect(() => {
+    divRef.current.focus();
+  }, []);
+
   return (
-    <div className="App" onKeyDown={handleKeyPress} tabIndex="0">
+    <div tabindex="0" className="App" onKeyDown={handleKeyPress} ref={divRef}>
       <div className="main-header">
         <h1>Welcome to Infinite Wordle</h1>
         <p>
@@ -159,7 +202,9 @@ function App() {
             Wordle
           </a>
         </p>
-        <p>{statusMessage}</p>
+        <p>Longest Streak: {longestStreak}</p>
+        <p>Current Streak: {streak}</p>
+        <p className="status-message">{statusMessage}</p>
       </div>
       <div className="game-board">
         <div className="row row-0">
@@ -205,6 +250,27 @@ function App() {
             return <div className="letter-key incorrect">{alphabet[idx]}</div>;
           }
         })}
+      </div>
+      <div className="game-over">
+        {gameOver ? <h3>{gameOverMessage}</h3> : ""}
+        {gameOver ? (
+          <h3>
+            Correct Word:{" "}
+            <a
+              href={
+                "http://www.google.com/search?q=" +
+                guessWord.toLowerCase() +
+                "+definition"
+              }
+              target="_blank"
+            >
+              {guessWord}
+            </a>
+          </h3>
+        ) : (
+          ""
+        )}
+        {gameOver ? <button className="new-game-button" onClick={newGame}>New Game</button> : ""}
       </div>
     </div>
   );
